@@ -10,7 +10,9 @@ CREATE TABLE users (
     role ENUM('administrator', 'admin', 'lawyer', 'staff', 'finance', 'reception') NOT NULL,
     otp_code VARCHAR(6),
     otp_expiry DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    login_attempts INT DEFAULT 0,
+    lockout_time DATETIME
 );
 
 -- Logs table
