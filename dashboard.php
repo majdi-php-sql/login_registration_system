@@ -1,27 +1,32 @@
 <?php
-// dashboard.php
 session_start();
-require 'config.php';
+require 'functions.php';
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (!isset($_SESSION['email'])) {
     header('Location: index.php');
     exit();
 }
 
-echo 'Welcome to the dashboard, ' . htmlspecialchars($_SESSION['username']);
+$email = $_SESSION['email'];
+$conn = get_db_connection();
+if ($conn) {
+    $stmt = $conn->prepare("SELECT id, username, email, role FROM users WHERE email = :email");
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+    $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Dashboard</h1>
-    <p>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!</p>
-    <a href="logout.php">Logout</a>
+    <h1>Welcome, <?php echo htmlspecialchars($user_data['username']); ?>!</h1>
+    <p>Email: <?php echo htmlspecialchars($user_data['email']); ?></p>
+    <p>Role: <?php echo htmlspecialchars($user_data['role']); ?></p>
+    <p><a href="logout.php">Logout</a></p>
 </body>
 </html>

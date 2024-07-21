@@ -1,41 +1,28 @@
 <?php
-// index.php
 session_start();
-require 'config.php';
 require 'functions.php';
 
-// Check if the form is submitted
+generate_csrf_token();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Check for the CSRF token
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        die('CSRF token validation failed');
-    }
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $csrf_token = $_POST['csrf_token'] ?? '';
 
-    // Validate captcha
-    if (!isset($_POST['g-recaptcha-response']) || empty($_POST['g-recaptcha-response'])) {
-        die('Captcha validation failed');
-    }
-
-    // Validate login credentials
-    $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING);
-    $password = filter_input(INPUT_POST, 'password', FILTER_SANITIZE_STRING);
-
-    if (validate_user($username, $password)) {
-        // Generate and send OTP
-        $otp = generate_otp($username);
-        send_otp_email($username, $otp);
-
-        $_SESSION['username'] = $username;
-        header('Location: otp_verification.php');
-        exit();
+    if (validate_user_input('', $email, $password, $csrf_token)) {
+        $user_id = validate_user_login($email, $password);
+        if ($user_id) {
+            $_SESSION['email'] = $email;
+            create_session($user_id);
+            log_user_action($user_id, 'Login');
+            header('Location: dashboard.php');
+            exit();
+        } else {
+            $error = 'Invalid email or password.';
+        }
     } else {
-        echo 'Invalid username or password';
+        $error = 'Invalid input or CSRF token.';
     }
-}
-
-// Generate CSRF token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -43,20 +30,20 @@ if (empty($_SESSION['csrf_token'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
-    <form method="post" action="">
-        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+    <?php if (isset($error)): ?>
+        <p><?php echo htmlspecialchars($error); ?></p>
+    <?php endif; ?>
+    <form action="index.php" method="post">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <div class="g-recaptcha" data-sitekey="your-site-key"></div>
+        <input type="password" name="password" id="password" required>
         <button type="submit">Login</button>
     </form>
+    <a href="reset_password_request.php">Forgot Password?</a>
 </body>
 </html>

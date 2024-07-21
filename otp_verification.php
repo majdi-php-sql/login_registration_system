@@ -1,25 +1,49 @@
 <?php
-// otp_verification.php
 session_start();
-require 'config.php';
-require 'functions.php';
+require_once 'functions.php'; // Assuming functions.php contains get_db_connection()
 
-if (!isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
-
+// Ensure CSRF token is valid
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $otp = filter_input(INPUT_POST, 'otp', FILTER_SANITIZE_STRING);
-
-    if (verify_otp($_SESSION['username'], $otp)) {
-        $_SESSION['logged_in'] = true;
-        header('Location: dashboard.php');
-        exit();
-    } else {
-        echo 'Invalid OTP';
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('Invalid CSRF token.');
     }
+
+    $otp_code = trim($_POST['otp_code']);
+    if (empty($otp_code)) {
+        die('OTP code cannot be empty.');
+    }
+
+    // Connect to the database
+    $conn = get_db_connection();
+
+    // Prepare and execute query to verify OTP
+    $stmt = $conn->prepare("SELECT id, otp_expiry FROM users WHERE otp_code = ?");
+    $stmt->bind_param("s", $otp_code);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($user_id, $otp_expiry);
+        $stmt->fetch();
+
+        // Check if OTP has expired
+        if (new DateTime() > new DateTime($otp_expiry)) {
+            echo 'OTP has expired. Please request a new one.';
+        } else {
+            // OTP is valid
+            // Here you should handle the successful OTP verification (e.g., update user status)
+            echo 'OTP verified successfully!';
+        }
+    } else {
+        echo 'Invalid OTP code.';
+    }
+
+    $stmt->close();
+    $conn->close();
 }
+
+// Generate a new CSRF token for the form
+$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 ?>
 
 <!DOCTYPE html>
@@ -28,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP Verification</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <form method="post" action="">
-        <label for="otp">OTP:</label>
-        <input type="text" id="otp" name="otp" required>
+    <form action="otp_verification.php" method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+        <label for="otp_code">Enter OTP:</label>
+        <input type="text" id="otp_code" name="otp_code" required>
         <button type="submit">Verify OTP</button>
     </form>
 </body>

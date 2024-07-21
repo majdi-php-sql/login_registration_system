@@ -5,7 +5,7 @@ USE SecureLoginSystem;
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(500) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role ENUM('administrator', 'admin', 'lawyer', 'staff', 'finance', 'reception') NOT NULL,
     otp_code VARCHAR(6),

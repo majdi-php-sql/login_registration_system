@@ -1,111 +1,158 @@
 <?php
-// functions.php
-require 'config.php';
-require 'vendor/autoload.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-function connect_db() {
-    global $conn;
-    return $conn;
-}
-
-function validate_user($username, $password) {
-    $conn = connect_db();
-    $stmt = $conn->prepare("SELECT id, username, password, login_attempts, lockout_time FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        // Check for account lockout
-        if ($user['login_attempts'] >= 5 && strtotime($user['lockout_time']) > time()) {
-            die('Account is locked. Try again later.');
-        }
-        // Verify password
-        if (password_verify($password, $user['password'])) {
-            // Reset login attempts on successful login
-            $stmt = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_time = NULL WHERE id = ?");
-            $stmt->bind_param("i", $user['id']);
-            $stmt->execute();
-            // Check if rehashing is necessary
-            if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
-                $newHash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-                $stmt->bind_param("si", $newHash, $user['id']);
-                $stmt->execute();
-            }
-            return true;
-        } else {
-            // Increment login attempts on failed login
-            $stmt = $conn->prepare("UPDATE users SET login_attempts = login_attempts + 1, lockout_time = IF(login_attempts >= 4, DATE_ADD(NOW(), INTERVAL 30 MINUTE), NULL) WHERE id = ?");
-            $stmt->bind_param("i", $user['id']);
-            $stmt->execute();
+function get_db_connection() {
+    static $conn = null;
+    if ($conn === null) {
+        $host = 'localhost';
+        $db = 'SecureLoginSystem';
+        $user = 'root';
+        $pass = '';
+        try {
+            $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
             return false;
         }
     }
-    return false;
+    return $conn;
 }
 
-function generate_otp($username) {
-    $otp = random_int(100000, 999999);
-    $expiry = date('Y-m-d H:i:s', strtotime('+5 minutes'));
-    $conn = connect_db();
-    $stmt = $conn->prepare("UPDATE users SET otp_code = ?, otp_expiry = ? WHERE username = ?");
-    $stmt->bind_param("sss", $otp, $expiry, $username);
-    $stmt->execute();
-    return $otp;
-}
-
-function verify_otp($username, $otp) {
-    $conn = connect_db();
-    $stmt = $conn->prepare("SELECT otp_code, otp_expiry FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        if ($user['otp_code'] === $otp && strtotime($user['otp_expiry']) > time()) {
-            // Clear OTP after successful verification
-            $stmt = $conn->prepare("UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE username = ?");
-            $stmt->bind_param("s", $username);
-            $stmt->execute();
-            return true;
-        }
+function generate_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
-    return false;
 }
 
-function send_otp_email($username, $otp) {
-    $conn = connect_db();
-    $stmt = $conn->prepare("SELECT email FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
+function validate_csrf_token($csrf_token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $csrf_token);
+}
+
+function validate_user_input($username, $email, $password, $csrf_token) {
+    return !empty($username) && !empty($email) && !empty($password) && filter_var($email, FILTER_VALIDATE_EMAIL) && validate_csrf_token($csrf_token);
+}
+
+function register_user($username, $email, $password, $role) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+    $stmt = $conn->prepare("INSERT INTO users (username, email, password, role) VALUES (:username, :email, :password, :role)");
+    $stmt->bindParam(':username', $username);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':password', $hashed_password);
+    $stmt->bindParam(':role', $role);
+
+    return $stmt->execute();
+}
+
+function validate_user_login($email, $password) {
+    if (empty($email) || empty($password)) {
+        return false;
+    }
+
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $stmt = $conn->prepare("SELECT id, password FROM users WHERE email = :email");
+    $stmt->bindParam(':email', $email);
     $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        $mail = new PHPMailer(true);
-        try {
-            // Server settings
-            $mail->isSMTP();
-            $mail->Host = 'smtp.example.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'your-email@example.com';
-            $mail->Password = 'your-email-password';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-            // Recipients
-            $mail->setFrom('your-email@example.com', 'Your Name');
-            $mail->addAddress($user['email']);
-            // Content
-            $mail->isHTML(true);
-            $mail->Subject = 'Your OTP Code';
-            $mail->Body    = "Your OTP code is $otp.";
-            $mail->send();
-        } catch (Exception $e) {
-            // Handle email sending failure
-        }
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && password_verify($password, $user['password'])) {
+        return $user['id'];
+    } else {
+        return false;
+    }
+}
+
+function create_session($user_id) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $session_id = bin2hex(random_bytes(32));
+    $stmt = $conn->prepare("INSERT INTO sessions (user_id, session_id) VALUES (:user_id, :session_id)");
+    $stmt->bindParam(':user_id', $user_id);
+    $stmt->bindParam(':session_id', $session_id);
+
+    return $stmt->execute();
+}
+
+function log_user_action($user_id, $action) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $ip_address = $_SERVER['REMOTE_ADDR'];
+    $user_agent = $_SERVER['HTTP_USER_AGENT'];
+    $stmt = $conn->prepare("INSERT INTO logs (user_id, action, ip_address, user_agent) VALUES (:user_id, :action, :ip_address, :user_agent)");
+    $stmt->bindParam(':user_id', $user_id);
+    $stmt->bindParam(':action', $action);
+    $stmt->bindParam(':ip_address', $ip_address);
+    $stmt->bindParam(':user_agent', $user_agent);
+
+    return $stmt->execute();
+}
+
+function send_email($to, $subject, $message) {
+    // Use a proper email library or service for sending emails
+    return mail($to, $subject, $message);
+}
+
+function validate_otp($email, $otp_code) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $stmt = $conn->prepare("SELECT otp_code, otp_expiry FROM users WHERE email = :email");
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && $user['otp_code'] === $otp_code && new DateTime() < new DateTime($user['otp_expiry'])) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function reset_user_password($reset_token, $new_password) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+    $stmt = $conn->prepare("UPDATE users SET password = :password WHERE reset_token = :reset_token");
+    $stmt->bindParam(':password', $hashed_password);
+    $stmt->bindParam(':reset_token', $reset_token);
+
+    return $stmt->execute();
+}
+
+function generate_reset_token($email) {
+    $conn = get_db_connection();
+    if (!$conn) {
+        return false;
+    }
+
+    $reset_token = bin2hex(random_bytes(32));
+    $stmt = $conn->prepare("UPDATE users SET reset_token = :reset_token WHERE email = :email");
+    $stmt->bindParam(':reset_token', $reset_token);
+    $stmt->bindParam(':email', $email);
+
+    if ($stmt->execute()) {
+        return $reset_token;
+    } else {
+        return false;
     }
 }
 ?>
