@@ -1,5 +1,12 @@
 {
     "require": {
-        "phpmailer/phpmailer": "^6.9"
+        "vlucas/phpdotenv": "^5.5",
+        "aws/aws-sdk-php": "^3.173",
+        "phpmailer/phpmailer": "^6.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "includes/"
+        }
     }
 }
