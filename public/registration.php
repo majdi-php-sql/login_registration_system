@@ -47,6 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submit
             <option value="reception">Reception</option> <!-- I added an option for Reception. -->
         </select>
         <button type="submit">Register</button> <!-- I created a submit button for the form. -->
+        <div id="form-footer">
+            <p>Don't have an account? <a href="registration.php">Register</a></p>
+        </div>
     </form>
 </body>
 </html>
