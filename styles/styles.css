@@ -40,3 +40,10 @@ button:hover {
 h1 {
     text-align: center;
 }
+#form-footer {
+    margin-top: 15px;
+}
+#form-footer p {
+    text-align: center;
+    color: #aaa;
+}

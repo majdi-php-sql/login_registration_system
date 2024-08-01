@@ -42,11 +42,13 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // I generated a new CSRF t
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>Login</title> <!-- I set the title of the page. -->
     <link rel="stylesheet" href="../styles/styles.css"> <!-- I linked to the stylesheet for styling. -->
 </head>
+
 <body>
     <form method="POST" action="index.php"> <!-- I set up the form to post data to the login page. -->
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>"> <!-- I included the CSRF token in the form. -->
@@ -55,6 +57,10 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // I generated a new CSRF t
         <label for="password">Password:</label> <!-- I labeled the password field. -->
         <input type="password" id="password" name="password" required> <!-- I created a password input for secure entry. -->
         <button type="submit" name="login">Login</button> <!-- I created a submit button for the form. -->
+        <div id="form-footer">
+            <p>Don't have an account? <a href="registration.php">Register</a></p>
+        </div>
     </form>
 </body>
+
 </html>

@@ -9,10 +9,10 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../config'); // I set up Do
 $dotenv->load(); // I loaded those environment variables into the app
 
 function connect_db() { // I whipped up a function to connect to the database
-    $host = getenv('localhost'); // I fetched the DB host from the environment variables
-    $db = getenv('secureloginsystem'); // I grabbed the DB name from the environment variables
-    $user = getenv('root'); // I got the DB user from the environment variables
-    $pass = getenv(''); // I picked up the DB password from the environment variables
+    $host = getenv('DB_HOST'); // I fetched the DB host from the environment variables
+    $db = getenv('DB_NAME'); // I grabbed the DB name from the environment variables
+    $user = getenv('DB_USER'); // I got the DB user from the environment variables
+    $pass = getenv('DB_PASS'); // I picked up the DB password from the environment variables
 
     $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4"; // I put together the DSN string for PDO
     try {
