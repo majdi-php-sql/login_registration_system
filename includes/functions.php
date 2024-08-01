@@ -10,7 +10,7 @@ $dotenv->load(); // I loaded those environment variables into the app
 
 function connect_db() { // I whipped up a function to connect to the database
     $host = getenv('localhost'); // I fetched the DB host from the environment variables
-    $db = getenv('SecureLoginSystem'); // I grabbed the DB name from the environment variables
+    $db = getenv('secureloginsystem'); // I grabbed the DB name from the environment variables
     $user = getenv('root'); // I got the DB user from the environment variables
     $pass = getenv(''); // I picked up the DB password from the environment variables
 
