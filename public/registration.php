@@ -21,7 +21,6 @@ if (isset($_POST['register'])) { // I checked if the form was submitted.
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
