@@ -1,7 +1,7 @@
 <?php
 session_start(); // I kicked off the session for handling user data.
 require '../includes/functions.php'; // I pulled in the functions from the includes folder.
-
+print_r($_SESSION);
 # Redirect to dashboard if already logged in
 if (isset($_SESSION['user_id'])) { // I checked if the user is already logged in.
     header('Location: dashboard.php'); // I sent them to the dashboard if they are.
