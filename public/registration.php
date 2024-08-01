@@ -27,7 +27,7 @@ if (isset($_POST['register'])) { // I checked if the form was submitted.
 <head>
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>Register</title> <!-- I set the title of the page. -->
-    <link rel="stylesheet" href="../styles/styles.css"> <!-- I linked to the stylesheet for styling. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
 </head>
 <body>
     <form method="POST" action="registration.php"> <!-- I set up the form to post data to the registration page. -->
