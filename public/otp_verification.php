@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) { // I checked if the user isn't logged in.
 }
 
 # Handle OTP verification
-if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submitted.
+if (isset($_POST['verify'])) { // I checked if the form was submitted.
     $otp_code = $_POST['otp_code']; // I grabbed the OTP code from the form.
     $user_id = $_SESSION['user_id']; // I got the user ID from the session.
 
@@ -33,13 +33,18 @@ generate_and_send_otp($_SESSION['user_id']); // I generated and sent an OTP to t
 <head>
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>OTP Verification</title> <!-- I set the title of the page. -->
-    <link rel="stylesheet" href="../styles/styles.css"> <!-- I linked to the stylesheet for styling. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        button {
+            background-color: #41adff;
+        }
+    </style>
 </head>
 <body>
     <form method="POST" action="otp_verification.php"> <!-- I set up the form to post data to the OTP verification page. -->
         <label for="otp_code">Enter OTP:</label> <!-- I labeled the OTP code field. -->
         <input type="text" id="otp_code" name="otp_code" required> <!-- I created a text input for the OTP code. -->
-        <button type="submit">Verify</button> <!-- I created a submit button for the form. -->
+        <button type="submit" name="verify">Verify</button> <!-- I created a submit button for the form. -->
     </form>
 </body>
 </html>

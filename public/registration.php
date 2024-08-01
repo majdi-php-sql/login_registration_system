@@ -3,7 +3,7 @@ session_start(); // I kicked off the session for user handling.
 require '../includes/functions.php'; // I pulled in the functions from the includes folder.
 
 # Handle registration
-if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submitted.
+if (isset($_POST['register'])) { // I checked if the form was submitted.
     $username = $_POST['username']; // I grabbed the username from the form.
     $email = $_POST['email']; // I got the email from the form.
     $password = $_POST['password']; // I pulled the password from the form.
@@ -21,13 +21,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submit
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>Register</title> <!-- I set the title of the page. -->
-    <link rel="stylesheet" href="../styles/styles.css"> <!-- I linked to the stylesheet for styling. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        button {
+            background-color: #41adff;
+        }
+    </style>
 </head>
 <body>
     <form method="POST" action="registration.php"> <!-- I set up the form to post data to the registration page. -->
@@ -46,7 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submit
             <option value="finance">Finance</option> <!-- I added an option for Finance. -->
             <option value="reception">Reception</option> <!-- I added an option for Reception. -->
         </select>
-        <button type="submit">Register</button> <!-- I created a submit button for the form. -->
+        <button type="submit" name="register">Register</button> <!-- I created a submit button for the form. -->
+        <div id="form-footer">
+            <p>Already have an account? <a href="index.php">Login</a></p>
+        </div>
     </form>
 </body>
 </html>

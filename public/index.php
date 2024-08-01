@@ -1,7 +1,6 @@
 <?php
 session_start(); // I kicked off the session for handling user data.
 require '../includes/functions.php'; // I pulled in the functions from the includes folder.
-
 # Redirect to dashboard if already logged in
 if (isset($_SESSION['user_id'])) { // I checked if the user is already logged in.
     header('Location: dashboard.php'); // I sent them to the dashboard if they are.
@@ -9,7 +8,7 @@ if (isset($_SESSION['user_id'])) { // I checked if the user is already logged in
 }
 
 # Handle login
-if ($_SERVER['REQUEST_METHOD'] === 'POST') { // I checked if the form was submitted.
+if (isset($_POST['login'])) { // I checked if the form was submitted.
     $username = $_POST['username']; // I grabbed the username from the form.
     $password = $_POST['password']; // I got the password from the form.
     $csrf_token = $_POST['csrf_token']; // I fetched the CSRF token from the form.
@@ -43,11 +42,18 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // I generated a new CSRF t
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>Login</title> <!-- I set the title of the page. -->
-    <link rel="stylesheet" href="../styles/styles.css"> <!-- I linked to the stylesheet for styling. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        button {
+            background-color: #41adff;
+        }
+    </style>
 </head>
+
 <body>
     <form method="POST" action="index.php"> <!-- I set up the form to post data to the login page. -->
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>"> <!-- I included the CSRF token in the form. -->
@@ -55,7 +61,11 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // I generated a new CSRF t
         <input type="text" id="username" name="username" required> <!-- I created a text input for the username. -->
         <label for="password">Password:</label> <!-- I labeled the password field. -->
         <input type="password" id="password" name="password" required> <!-- I created a password input for secure entry. -->
-        <button type="submit">Login</button> <!-- I created a submit button for the form. -->
+        <button type="submit" name="login">Login</button> <!-- I created a submit button for the form. -->
+        <div id="form-footer">
+            <p>Don't have an account? <a href="registration.php">Register</a></p>
+        </div>
     </form>
 </body>
+
 </html>
