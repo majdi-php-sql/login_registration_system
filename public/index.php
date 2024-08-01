@@ -47,6 +47,11 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // I generated a new CSRF t
     <meta charset="UTF-8"> <!-- I set the character encoding for the page. -->
     <title>Login</title> <!-- I set the title of the page. -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        button {
+            background-color: #41adff;
+        }
+    </style>
 </head>
 
 <body>
